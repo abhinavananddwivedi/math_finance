@@ -1,0 +1,789 @@
+---
+title: "Stochastic Calculus from Scratch"
+subtitle: "A Journey Through Random Processes and Financial Mathematics"
+output:
+  beamer_presentation:
+    theme: "malmoe"
+    colortheme: "seahorse"
+    # includes:
+    #   in_header: preamble.tex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Course Outline
+
+**Chapters**
+
+1. Random Walks and Brownian Motion
+2. Itô Integral and Itô's Lemma
+3. Stochastic Differential Equations
+4. Feynman-Kac and PDEs
+5. Risk-Neutral Pricing and Martingales
+6. Black-Scholes Theory
+7. Jump-Diffusion Models
+8. Lévy Processes
+
+# Chapter 1: Random Walks and Brownian Motion
+
+## Simple Random Walk
+
+**Definition**
+
+Flip a fair coin repeatedly. After each flip, take a step: heads = +1, tails = -1.
+
+Position after $n$ steps:
+$$S_n = X_1 + X_2 + \cdots + X_n$$
+where each $X_i \in \{-1, +1\}$ with equal probability.
+
+**Key Properties**
+
+- $E[S_n] = 0$ (expected position is starting point)
+- $\text{Var}(S_n) = n$ (variance grows linearly)
+- $S_n \sim \sqrt{n} \cdot N(0,1)$ approximately (Central Limit Theorem)
+
+## Scaling to Continuous Time
+
+**The Crucial Scaling**
+
+Divide time into intervals of length $\Delta t$, with step size $\Delta x$.
+
+After time $t$, we take $n = t/\Delta t$ steps.
+
+For variance to scale correctly: $\text{Var}(S_n) \sim t$
+
+This requires:
+$$n \cdot (\Delta x)^2 \sim t \quad \Rightarrow \quad (\Delta x)^2 \sim \Delta t$$
+
+Therefore: **$\Delta x \sim \sqrt{\Delta t}$**
+
+Steps shrink like the square root of time!
+
+## Brownian Motion Emerges
+
+**Definition: Brownian Motion**
+
+Taking the limit as $\Delta t \to 0$, we get a continuous process $B(t)$ called **Brownian motion** (or Wiener process) if:
+
+1. $B(0) = 0$
+2. Independent increments: $B(t) - B(s)$ is independent of the past for $t > s$
+3. $B(t) - B(s) \sim N(0, t-s)$ for $t > s$
+4. $B(t)$ has continuous paths
+
+**Shocking Fact**
+
+Brownian motion is continuous everywhere but differentiable **nowhere**. It's infinitely jagged!
+
+# Chapter 2: Itô Integral and Itô's Lemma
+
+## Why Regular Integration Fails
+
+**Regular Calculus**
+
+$$\int_0^t f(s) \, ds = \lim_{\Delta s \to 0} \sum_{i} f(s_i) \Delta s$$
+
+The choice of evaluation point $s_i$ doesn't matter for smooth $f$.
+
+**Stochastic Integration**
+
+What about $\int_0^t f(s) \, dB(s)$?
+
+Problem: Brownian motion is so rough that the choice of evaluation point **does matter**! Different choices give different answers.
+
+## The Itô Integral
+
+**Itô's Choice**
+
+**Always evaluate at the left endpoint.**
+
+The Itô integral is:
+$$\int_0^t f(s) \, dB(s) = \lim_{n \to \infty} \sum_{i=0}^{n-1} f(s_i) [B(s_{i+1}) - B(s_i)]$$
+
+where $s_i = it/n$ and we use $f(s_i)$ from the left of each interval.
+
+**Why Left Endpoint?**
+
+Makes $f(s_i)$ **independent** of $\Delta B_i = B(s_{i+1}) - B(s_i)$.
+
+This gives nice properties (martingales).
+
+## Example: $\int_0^t B(s) \, dB(s)$
+
+**Calculation**
+
+Use the identity:
+$$B^2(s_{i+1}) - B^2(s_i) = 2B(s_i)\Delta B_i + (\Delta B_i)^2$$
+
+Summing over all intervals:
+$$\sum B(s_i) \Delta B_i = \frac{1}{2}B^2(t) - \frac{1}{2}\sum (\Delta B_i)^2$$
+
+**The Magic**
+
+As $n \to \infty$: $\sum (\Delta B_i)^2 \to t$ (deterministic!)
+
+Therefore:
+$$\boxed{\int_0^t B(s) \, dB(s) = \frac{1}{2}B^2(t) - \frac{1}{2}t}$$
+
+Extra $-t/2$ term is the signature of stochastic calculus!
+
+## Quadratic Variation
+
+**Key Insight**
+
+The quadratic variation of Brownian motion over $[0,t]$ is $t$, not zero:
+$$\sum_{i=0}^{n-1} (\Delta B_i)^2 \to t$$
+
+This leads to the formal notation:
+$$\boxed{(dB)^2 = dt}$$
+
+This is fundamentally different from smooth functions where $(dx)^2 = 0$ in the limit.
+
+## Itô's Lemma: The Chain Rule
+
+**Regular Chain Rule**
+
+If $x(t)$ is differentiable: $df = f'(x) \, dx$
+
+**Itô's Lemma for $f(B(t))$**
+
+Taylor expansion:
+$$df = f'(B) \cdot dB + \frac{1}{2}f''(B) \cdot (dB)^2 + \cdots$$
+
+Since $(dB)^2 = dt$, the second-order term survives!
+
+$$\boxed{df(B) = f'(B) \, dB + \frac{1}{2}f''(B) \, dt}$$
+
+The extra $\frac{1}{2}f''(B) \, dt$ term is the correction for randomness.
+
+## Verification Example
+
+**Take $f(x) = x^2$**
+
+$f'(x) = 2x$ and $f''(x) = 2$
+
+Itô's lemma:
+$$d(B^2) = 2B \, dB + \frac{1}{2} \cdot 2 \, dt = 2B \, dB + dt$$
+
+Integrating:
+$$B^2(t) = 2\int_0^t B(s) \, dB(s) + t$$
+
+Therefore:
+$$\int_0^t B(s) \, dB(s) = \frac{1}{2}B^2(t) - \frac{1}{2}t \quad \checkmark$$
+
+## General Itô's Lemma
+
+**For $f(t, X(t))$**
+
+$$\boxed{df = \frac{\partial f}{\partial t}dt + \frac{\partial f}{\partial x}dX + \frac{1}{2}\frac{\partial^2 f}{\partial x^2}(dX)^2}$$
+
+**Multiplication Rules**
+
+- $dt \cdot dt = 0$
+- $dt \cdot dB = 0$
+- $dB \cdot dB = dt$
+
+# Chapter 3: Stochastic Differential Equations
+
+## Stochastic Differential Equations
+
+**General Form**
+
+$$dX(t) = \mu(t, X) \, dt + \sigma(t, X) \, dB(t)$$
+
+where:
+
+- $\mu(t, X)$ is the **drift** (deterministic trend)
+- $\sigma(t, X)$ is the **diffusion/volatility** (random fluctuation)
+- $B(t)$ is Brownian motion
+
+**Integral Form**
+
+$$X(t) = X(0) + \int_0^t \mu(s, X(s)) \, ds + \int_0^t \sigma(s, X(s)) \, dB(s)$$
+
+## Geometric Brownian Motion (GBM)
+
+**The Stock Price Model**
+
+$$dS = \mu S \, dt + \sigma S \, dB$$
+
+Interpretation: Return $dS/S$ has deterministic component $\mu \, dt$ plus random noise $\sigma \, dB$.
+
+**Solving GBM**
+
+Trick: Apply Itô's lemma to $f(S) = \log S$
+
+$$d(\log S) = \left(\mu - \frac{\sigma^2}{2}\right) dt + \sigma \, dB$$
+
+Solution:
+$$\boxed{S(t) = S(0) \exp\left[\left(\mu - \frac{\sigma^2}{2}\right)t + \sigma B(t)\right]}$$
+
+The $-\sigma^2/2$ term is Itô's correction!
+
+## Ornstein-Uhlenbeck Process
+
+**Mean Reversion Model**
+
+$$dX = -\theta X \, dt + \sigma \, dB$$
+
+where $\theta > 0$ pulls $X$ back toward zero.
+
+**Solution**
+
+Apply Itô's lemma to $f(t,X) = e^{\theta t} X$:
+
+$$\boxed{X(t) = X(0)e^{-\theta t} + \sigma \int_0^t e^{-\theta(t-s)} \, dB(s)}$$
+
+**Properties:**
+
+- First term decays exponentially
+- Process oscillates around zero
+- Stationary variance: $\sigma^2/(2\theta)$
+
+# Chapter 4: Feynman-Kac and PDEs
+
+## The SDE-PDE Connection
+
+**Setup**
+
+Consider SDE: $dX = \mu(X) \, dt + \sigma(X) \, dB$
+
+Define: $u(t, x) = E[g(X(T)) \mid X(t) = x]$
+
+**Key Idea**
+
+Apply Itô's lemma to $u(t, X(t))$ and take expectations.
+
+The stochastic integral vanishes (zero mean).
+
+## Backward Kolmogorov Equation
+
+**Result**
+
+$$\boxed{\frac{\partial u}{\partial t} + \mu(x)\frac{\partial u}{\partial x} + \frac{1}{2}\sigma^2(x)\frac{\partial^2 u}{\partial x^2} = 0}$$
+
+with boundary condition $u(T, x) = g(x)$.
+
+**The Bridge**
+
+**SDE** $\Leftrightarrow$ **PDE**
+
+Probabilistic representation $\Leftrightarrow$ Analytical solution
+
+## Example: The Heat Equation
+
+**Pure Brownian Motion**
+
+SDE: $dX = dB$ (i.e., $\mu = 0$, $\sigma = 1$)
+
+Backward equation:
+$$\frac{\partial u}{\partial t} + \frac{1}{2}\frac{\partial^2 u}{\partial x^2} = 0$$
+
+Change time direction ($\tau = T - t$):
+$$\boxed{\frac{\partial u}{\partial \tau} = \frac{1}{2}\frac{\partial^2 u}{\partial x^2}}$$
+
+This is the heat equation!
+
+**Interpretation**
+
+Solution at $(x,\tau)$ = expected value of initial condition along Brownian paths ending at $x$ after time $\tau$.
+
+## Black-Scholes PDE
+
+**From GBM to Black-Scholes**
+
+SDE: $dS = \mu S \, dt + \sigma S \, dB$
+
+For a derivative with payoff $g(S(T))$ at time $T$, the price satisfies:
+
+$$\boxed{\frac{\partial V}{\partial t} + rS\frac{\partial V}{\partial S} + \frac{1}{2}\sigma^2 S^2\frac{\partial^2 V}{\partial S^2} = rV}$$
+
+with terminal condition $V(T, S) = g(S)$.
+
+**Two Solution Methods**
+
+1. Solve the PDE (analytical or numerical)
+2. Simulate the SDE and average payoffs (Monte Carlo)
+
+They give the same answer!
+
+# Chapter 5: Risk-Neutral Pricing
+
+## What is a Martingale?
+
+**Definition**
+
+A process $M(t)$ is a **martingale** if:
+$$E[M(t) \mid \mathcal{F}_s] = M(s) \quad \text{for all } t \geq s$$
+
+where $\mathcal{F}_s$ is "all information up to time $s$".
+
+**Intuitive Meaning**
+
+- Best prediction of tomorrow's value is today's value
+- No drift, just random fluctuations
+- A "fair game"
+
+Key property: If $M(t)$ is a martingale, then $E[M(t)] = E[M(0)]$ for all $t$.
+
+## Examples of Martingales
+
+**Common Martingales**
+
+- Brownian motion $B(t)$
+- Itô integral $\int_0^t f(s) \, dB(s)$ (if $f$ is "nice")
+- Exponential martingale: $\exp(\sigma B(t) - \frac{1}{2}\sigma^2 t)$
+- Gambler's wealth in a fair casino game
+
+## Fundamental Theorem of Asset Pricing
+
+**The Nuclear Bomb of Mathematical Finance**
+
+A market is arbitrage-free if and only if there exists a probability measure $\mathbb{Q}$ (the "risk-neutral measure") under which **all discounted asset prices are martingales**.
+
+**Implication**
+
+Real-world drift $\mu$ doesn't matter for pricing!
+
+Under $\mathbb{Q}$, stocks grow at the risk-free rate $r$:
+$$dS = rS \, dt + \sigma S \, d\tilde{B}$$
+
+where $\tilde{B}$ is Brownian motion under $\mathbb{Q}$.
+
+## Risk-Neutral Pricing Formula
+
+**The Universal Pricing Formula**
+
+For a derivative with payoff $g(S(T))$ at time $T$:
+
+$$\boxed{V(t) = e^{-r(T-t)}E^{\mathbb{Q}}[g(S(T)) \mid S(t)]}$$
+
+where $E^{\mathbb{Q}}$ denotes expectation under the risk-neutral measure.
+
+**The Miracle**
+
+- Real drift $\mu$ doesn't appear!
+- Risk preferences encoded in current price $S(t)$
+- Only need: $S(t)$, $r$, $\sigma$, and payoff function $g$
+
+## Girsanov's Theorem (Sketch)
+
+**Changing Probability Measures**
+
+Under real-world measure $\mathbb{P}$:
+$$dS = \mu S \, dt + \sigma S \, dB$$
+
+Define new Brownian motion under $\mathbb{Q}$:
+$$\tilde{B}(t) = B(t) + \frac{\mu - r}{\sigma}t$$
+
+By Girsanov's theorem, $\tilde{B}(t)$ is Brownian motion under $\mathbb{Q}$.
+
+Then:
+$$dS = rS \, dt + \sigma S \, d\tilde{B}$$
+
+No drift! Discounted price is a $\mathbb{Q}$-martingale.
+
+# Chapter 6: Black-Scholes Theory
+
+## Black-Scholes Formula
+
+**European Call Option**
+
+Payoff: $\max(S(T) - K, 0)$
+
+Price:
+$$\boxed{C(t, S) = S\Phi(d_1) - Ke^{-r(T-t)}\Phi(d_2)}$$
+
+where:
+\begin{align*}
+d_1 &= \frac{\log(S/K) + (r + \sigma^2/2)(T-t)}{\sigma\sqrt{T-t}} \\
+d_2 &= d_1 - \sigma\sqrt{T-t}
+\end{align*}
+
+$\Phi$ is the standard normal CDF.
+
+## Interpretation of Black-Scholes
+
+**Breaking Down the Formula**
+
+$$C = S\Phi(d_1) - Ke^{-r(T-t)}\Phi(d_2)$$
+
+- $S\Phi(d_1)$: Expected present value of stock if exercised
+- $Ke^{-r(T-t)}\Phi(d_2)$: Expected present value of strike payment
+- $\Phi(d_2)$: Risk-neutral probability option finishes in-the-money
+
+**Derivation**
+
+Under $\mathbb{Q}$:
+$$S(T) = S(t)\exp\left[\left(r - \frac{\sigma^2}{2}\right)(T-t) + \sigma\sqrt{T-t}Z\right]$$
+
+where $Z \sim N(0,1)$. Compute $E^{\mathbb{Q}}[\max(S(T) - K, 0)]$.
+
+## The Greeks: Risk Sensitivities
+
+**Delta ($\Delta$)**
+
+$$\Delta = \frac{\partial C}{\partial S} = \Phi(d_1)$$
+
+Hedge ratio: buy $\Delta$ shares to hedge short call.
+
+**Gamma ($\Gamma$)**
+
+$$\Gamma = \frac{\partial^2 C}{\partial S^2} = \frac{\phi(d_1)}{S\sigma\sqrt{T-t}}$$
+
+Convexity: how fast $\Delta$ changes.
+
+**Vega ($\mathcal{V}$)**
+
+$$\mathcal{V} = \frac{\partial C}{\partial \sigma} = S\phi(d_1)\sqrt{T-t}$$
+
+Volatility sensitivity. Options are "long volatility."
+
+## More Greeks
+
+**Theta ($\Theta$)**
+
+$$\Theta = \frac{\partial C}{\partial t} = -\frac{S\phi(d_1)\sigma}{2\sqrt{T-t}} - rKe^{-r(T-t)}\Phi(d_2)$$
+
+Time decay: value lost as expiration approaches.
+
+**Rho ($\rho$)**
+
+$$\rho = \frac{\partial C}{\partial r} = K(T-t)e^{-r(T-t)}\Phi(d_2)$$
+
+Interest rate sensitivity.
+
+**Greeks Satisfy Black-Scholes PDE**
+
+$$\Theta + \frac{1}{2}\sigma^2 S^2\Gamma + rS\Delta - rC = 0$$
+
+## Delta Hedging
+
+**Strategy**
+
+You sold a call option. How to hedge?
+
+1. At time $t$: Hold $\Delta(t)$ shares of stock
+2. As stock moves: Continuously rebalance to maintain $\Delta(t)$ shares
+3. If hedged perfectly: Earn risk-free rate
+
+**The Catch**
+
+- Need continuous rebalancing (impossible in practice)
+- Need to know $\sigma$ (unknown in advance)
+- Discrete hedging P&L: $\frac{1}{2}\Gamma(dS)^2 - \Theta \, dt$
+- If realized vol $\neq$ implied vol, you make/lose money
+
+# Chapter 7: Jump-Diffusion Models
+
+## Why Jumps?
+
+**Limitations of Brownian Motion**
+
+Real markets have:
+
+- Earnings announcements: stock gaps 10% overnight
+- Central bank decisions: FX rates jump instantly
+- Black swan events: market crashes, flash crashes
+- Fat tails: extreme returns more common than Gaussian
+
+Purely diffusive models underprice out-of-the-money options.
+
+## Poisson Process
+
+**Counting Random Events**
+
+$N(t)$ is a Poisson process with intensity $\lambda$ if:
+
+1. $N(0) = 0$
+2. Independent increments
+3. $N(t) - N(s) \sim \text{Poisson}(\lambda(t-s))$ for $t > s$
+
+**Properties**
+
+- $E[N(t)] = \lambda t$ (average $\lambda$ events per unit time)
+- $\text{Var}(N(t)) = \lambda t$
+- Waiting times between events: exponential with rate $\lambda$
+- $(dN)^2 = dN$ (since $dN \in \{0,1\}$)
+
+## Compound Poisson Process
+
+**Random-Sized Jumps**
+
+$$J(t) = \sum_{i=1}^{N(t)} Y_i$$
+
+where $Y_i$ are i.i.d. random jump sizes.
+
+Differential notation:
+$$dJ(t) = Y \, dN(t)$$
+
+where $Y$ is drawn when a jump occurs.
+
+## Merton Jump-Diffusion Model
+
+**Combining Diffusion and Jumps**
+
+$$\boxed{\frac{dS}{S} = \mu \, dt + \sigma \, dB + (e^Y - 1) \, dN}$$
+
+**Components:**
+
+- $\mu \, dt$: Deterministic drift
+- $\sigma \, dB$: Continuous diffusion (Brownian)
+- $(e^Y - 1) \, dN$: Discontinuous jumps
+
+**Jump structure:**
+
+- Jumps arrive with intensity $\lambda$
+- Jump sizes: typically $Y \sim N(\mu_J, \sigma_J^2)$
+- When jump occurs: $S \to S \cdot e^Y$
+
+## Itô's Lemma with Jumps
+
+**Extended Formula**
+
+For $f(S)$ where $S$ follows jump-diffusion:
+
+$$df = \frac{\partial f}{\partial t}dt + \frac{\partial f}{\partial S}dS + \frac{1}{2}\frac{\partial^2 f}{\partial S^2}(dS)^2$$
+$$+ [f(Se^Y) - f(S) - \frac{\partial f}{\partial S}S(e^Y - 1)]\,dN$$
+
+Last term: jump correction (actual jump minus first-order approximation).
+
+**Multiplication Rules**
+
+- $dB \cdot dN = 0$ (jumps and diffusion independent)
+- $dt \cdot dN = 0$
+- $dN \cdot dN = dN$ (only one jump at a time)
+
+## Log Price with Jumps
+
+**Apply Itô to $f(S) = \log S$**
+
+Result:
+$$d(\log S) = \left(\mu - \frac{\sigma^2}{2}\right)dt + \sigma \, dB + Y \, dN$$
+
+Integrating:
+$$\log S(t) = \log S(0) + \left(\mu - \frac{\sigma^2}{2}\right)t + \sigma B(t) + \sum_{i=1}^{N(t)} Y_i$$
+
+Log price = drift + Brownian + sum of jumps.
+
+## Risk-Neutral Pricing with Jumps
+
+**Martingale Condition**
+
+Under $\mathbb{Q}$, discounted price is martingale:
+$$\frac{dS}{S} = (r - \lambda \kappa) \, dt + \sigma \, d\tilde{B} + (e^Y - 1) \, d\tilde{N}$$
+
+where $\kappa = E^{\mathbb{Q}}[e^Y - 1]$ is expected jump size.
+
+Drift adjustment $-\lambda \kappa$ compensates for jumps.
+
+**Key Insight**
+
+With jumps, you can't perfectly hedge! There's always jump risk.
+
+## Merton Option Pricing
+
+**Formula**
+
+$$\boxed{C(S, t) = \sum_{n=0}^{\infty} \frac{e^{-\lambda'(T-t)}[\lambda'(T-t)]^n}{n!} \text{BS}(S, K, r_n, \sigma_n, T-t)}$$
+
+where:
+
+- $\lambda' = \lambda(1 + \kappa)$ is adjusted jump intensity
+- $\text{BS}(\cdot)$ is Black-Scholes formula with modified parameters
+- Each term corresponds to exactly $n$ jumps before maturity
+
+**Interpretation**
+
+Weighted average of Black-Scholes prices over different numbers of jumps.
+
+## PIDE: Partial Integro-Differential Equation
+
+**Pricing Equation with Jumps**
+
+$$\frac{\partial V}{\partial t} + (r - \lambda\kappa)S\frac{\partial V}{\partial S} + \frac{1}{2}\sigma^2 S^2\frac{\partial^2 V}{\partial S^2}$$
+$$+ \lambda\int_{-\infty}^{\infty}[V(t, Se^y) - V(t,S)]f(y)\,dy = rV$$
+
+where $f(y)$ is PDF of jump size $Y$.
+
+Integral term accounts for all possible jump outcomes.
+
+Much harder to solve than Black-Scholes PDE!
+
+# Chapter 8: Lévy Processes
+
+## Definition of Lévy Processes
+
+**Ultimate Generalization**
+
+A process $L(t)$ is a **Lévy process** if:
+
+1. $L(0) = 0$
+2. Independent increments: $L(t) - L(s)$ independent of past for $t > s$
+3. Stationary increments: $L(t) - L(s) \sim L(t-s) - L(0)$
+4. Stochastic continuity
+5. Càdlàg paths (right-continuous with left limits)
+
+**Examples We've Seen**
+
+- Brownian motion (continuous paths)
+- Poisson process (jumps of size 1)
+- Compound Poisson (random-sized jumps)
+- Merton jump-diffusion (Brownian + compound Poisson)
+
+## Lévy-Khintchine Representation
+
+**The Magic Decomposition**
+
+Every Lévy process can be uniquely decomposed:
+$$\boxed{L(t) = \gamma t + \sigma B(t) + J(t)}$$
+
+where:
+
+- $\gamma t$: Linear drift (deterministic)
+- $\sigma B(t)$: Brownian component (continuous)
+- $J(t)$: Pure jump component (discontinuous)
+
+Jumps characterized by **Lévy measure** $\nu(dy)$: specifies how often jumps of size $y$ occur.
+
+Can have infinitely many jumps in finite time!
+
+## Lévy-Khintchine Formula
+
+**Characteristic Function**
+
+$$E[e^{i\theta L(t)}] = \exp\left[t\psi(\theta)\right]$$
+
+where:
+$$\psi(\theta) = i\theta\gamma - \frac{1}{2}\sigma^2\theta^2 + \int_{-\infty}^{\infty}(e^{i\theta y} - 1 - i\theta y\mathbb{1}_{|y|<1})\nu(dy)$$
+
+The triplet $(\gamma, \sigma^2, \nu)$ completely characterizes any Lévy process.
+
+## Types of Jump Behavior
+
+**Finite Activity**
+
+$\int \nu(dy) < \infty$: Finitely many jumps in finite time.
+
+Example: Compound Poisson
+
+**Infinite Activity**
+
+$\int \nu(dy) = \infty$: Infinitely many jumps, but most are tiny.
+
+Example: Variance Gamma, NIG
+
+**Variation**
+
+- Finite variation: $\int |y| \nu(dy) < \infty$
+- Infinite variation: $\int |y| \nu(dy) = \infty$ (like Brownian motion)
+
+## Popular Lévy Processes in Finance
+
+**Variance Gamma (VG)**
+
+- Infinite activity, finite variation
+- Time-changed Brownian motion
+- Creates volatility smile naturally
+- Lévy density: $\nu(dy) = \frac{C}{|y|}e^{-\lambda|y|}dy$
+
+**Normal Inverse Gaussian (NIG)**
+
+- Infinite activity, infinite variation
+- Hyperbolic distribution for returns
+- Good fit to empirical data
+
+## Why Lévy Processes Matter
+
+**Empirical Fit**
+
+Real return distributions have:
+
+- Fat tails (more extreme events than Gaussian)
+- Skewness (asymmetric up/down moves)
+- Excess kurtosis (peaked center + fat tails)
+
+Lévy processes capture these features!
+
+**Tractability**
+
+Despite complexity:
+
+- Semi-closed form option prices (via FFT)
+- Fast calibration algorithms
+- Analytical Greeks (sometimes)
+
+## Pricing PIDE for Lévy Processes
+
+**General Pricing Equation**
+
+For derivative $V(t, S)$ where $S$ follows Lévy dynamics:
+
+$$\frac{\partial V}{\partial t} + (r - \psi(-i))S\frac{\partial V}{\partial S} + \frac{1}{2}\sigma^2 S^2\frac{\partial^2 V}{\partial S^2}$$
+$$+ \int_{-\infty}^{\infty}\left[V(t, Se^y) - V(t,S) - S(e^y - 1)\frac{\partial V}{\partial S}\right]\nu(dy) = rV$$
+
+Integral accounts for all possible jump sizes weighted by Lévy measure.
+
+## The Lévy Landscape
+
+**Hierarchy**
+
+```
+            Lévy Processes
+                  |
+     +------------+------------+
+     |                         |
+Continuous                   Jumps
+(Brownian)                     |
+              +----------------+----------------+
+              |                                 |
+       Finite Activity                   Infinite Activity
+    (Compound Poisson)                   (VG, NIG, CGMY)
+                                                |
+                               +----------------+----------------+
+                               |                                 |
+                        Finite Variation                 Infinite Variation
+```
+
+## Summary: The Full Circle
+
+**The Journey**
+
+Random walks $\to$ Brownian motion $\to$ SDEs $\to$ Jump-diffusion $\to$ Lévy processes
+
+Each step added richness:
+
+- Brownian: Continuous randomness
+- SDEs: State-dependent dynamics
+- Jumps: Discontinuous shocks
+- Lévy: Full generality of time-homogeneous randomness
+
+**Connections**
+
+All tied together by:
+
+- PDEs/PIDEs (analytical methods)
+- Martingales (probabilistic methods)
+- Fourier methods (computational finance)
+
+## What You've Learned
+
+**Foundations Mastered**
+
+- ✓ Random walks and Brownian motion
+- ✓ Itô's lemma and stochastic integration
+- ✓ SDEs and their solutions
+- ✓ Feynman-Kac and PDE connections
+- ✓ Risk-neutral pricing and martingales
+- ✓ Black-Scholes theory and Greeks
+- ✓ Jump-diffusion models
+- ✓ Lévy processes
+
+**Next Steps**
+
+Heston model, local volatility, rough volatility, optimal stopping, stochastic control, term structure models, credit risk...
+
+## Thank You!
+
+**Congratulations on completing this journey through stochastic calculus.**
